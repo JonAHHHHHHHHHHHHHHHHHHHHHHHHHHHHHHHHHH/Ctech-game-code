@@ -126,8 +126,8 @@ class Piece(object):
         self.color = shape_colors[shapes.index(shape)]
         self.rotation = 0
     
-def create_grid(locked_positions={}):
-    grid = [[(0,0,0) for _ in range(10)] for _ in range(20)]
+def create_grid(locked_positions={}, grid_width=10):
+    grid = [[(0,0,0) for _ in range(grid_width)] for _ in range(20)]
 
     for i in range(len(grid)):
         for j in range(len(grid[i])):
@@ -153,7 +153,8 @@ def convert_shape_format(shape):
     return positions
 
 def valid_space(shape, grid):
-    accepted_positions = [[(j, i) for j in range(10) if grid[i][j] == (0, 0, 0)] for i in range(20)]
+    grid_width = len(grid[0])
+    accepted_positions = [[(j, i) for j in range(grid_width) if grid[i][j] == (0, 0, 0)] for i in range(20)]
     accepted_positions = [j for sub in accepted_positions for j in sub]
 
     formatted = convert_shape_format(shape)
@@ -177,7 +178,7 @@ def draw_grid(surface, grid):
     sy = top_left_y
 
     for i in range(len(grid)):
-        pygame.draw.line(surface, (128, 128, 128), (sx, sy + i * block_size), (sx + play_width, sy + i * block_size))
+        pygame.draw.line(surface, (128, 128, 128), (sx, sy + i * block_size), (sx + len(grid[0]) * block_size, sy + i * block_size))
         for j in range(len(grid[i])):
             pygame.draw.line(surface, (128, 128, 128), (sx + j * block_size, sy), (sx + j * block_size, sy + play_height))
 
@@ -256,13 +257,16 @@ def draw_window(surface, grid, score=0):
     pygame.draw.rect(
         surface,
         (255, 0, 0),
-        (top_left_x, top_left_y, play_width, play_height),
+        (top_left_x, top_left_y, len(grid[0]) * block_size, play_height),
         5,
     )
 
 def main():
     locked_positions = {}
-    grid = create_grid(locked_positions)
+    grid_width=10
+    shrink_timer=0
+    shrink_count=0
+    grid = create_grid(locked_positions, grid_width)
 
     change_piece = False
     run = True
@@ -275,10 +279,18 @@ def main():
     fall_speed = 0.27
 
     while run:
-        grid = create_grid(locked_positions)
+        grid = create_grid(locked_positions, grid_width)
 
         fall_time += clock.get_rawtime()
         level_time += clock.get_rawtime()
+        shrink_timer += clock.get_rawtime()
+        if shrink_timer>=20000 and shrink_count<5:
+            shrink_timer=0
+            shrink_count+=1
+            grid_width-=1
+            locked_positions={(x,y):c for (x,y),c in locked_positions.items() if x<grid_width}
+            if current_piece.x>grid_width-1:
+                current_piece.x=grid_width-1
         clock.tick()
 
         if level_time / 1000 > 5:
@@ -325,7 +337,7 @@ def main():
 
         for i in range(len(shape_pos)):
             x, y = shape_pos[i]
-            if y > -1 and 0 <= x < 10:
+            if y > -1 and 0 <= x < grid_width:
                 grid[y][x] = current_piece.color
 
         if change_piece:
