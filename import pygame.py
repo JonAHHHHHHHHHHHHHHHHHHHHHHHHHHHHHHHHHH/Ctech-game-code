@@ -170,8 +170,8 @@ def check_lost(positions):
         if y < 1:
             return True
     return False
-def get_shape():
-    return Piece(5, 0, random.choice(shapes))
+def get_shape(grid_width=10):
+    return Piece(min(5, grid_width // 2), 0, random.choice(shapes))
 
 def draw_grid(surface, grid):
     sx = top_left_x
@@ -270,8 +270,8 @@ def main():
 
     change_piece = False
     run = True
-    current_piece = get_shape()
-    next_piece = get_shape()
+    current_piece = get_shape(grid_width)
+    next_piece = get_shape(grid_width)
     clock = pygame.time.Clock()
     fall_time = 0
     level_time = 0
@@ -342,11 +342,13 @@ def main():
 
         if change_piece:
             for pos in shape_pos:
-                p = (pos[0], pos[1])
-                locked_positions[p] = current_piece.color
+                x, y = pos
+                if 0 <= x < grid_width and y >= 0:
+                    locked_positions[(x, y)] = current_piece.color
 
             current_piece = next_piece
-            next_piece = get_shape()
+            current_piece.x = min(5, grid_width // 2)
+            next_piece = get_shape(grid_width)
             change_piece = False
             score += clear_rows(grid, locked_positions) * 10
 
